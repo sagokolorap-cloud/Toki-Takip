@@ -9,9 +9,9 @@
 main{max-width:560px;margin:auto;padding:14px 14px 90px}
 h1{font-size:22px;margin:10px 0 2px}h2{font-size:17px;margin:0 0 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
-.big{font-size:30px;font-weight:700;letter-spacing:-.5px}.mut{color:var(--mut);font-size:14px}
+.big{font-size:30px;font-weight:300;letter-spacing:-.5px}.mut{color:var(--mut);font-size:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid b{display:block;font-size:17px}
-.dots{display:grid;grid-template-columns:repeat(30,1fr);gap:2px;margin:12px 0 6px}
+.dots{display:grid;grid-template-columns:36px repeat(12,1fr);gap:3px;max-width:320px;margin:12px 0 8px}.dots b{font-size:11px;color:var(--y);align-self:center}.dots i.e{background:transparent}.kb{font-weight:700;font-size:16px;color:var(--ink)}.th{font-weight:300;font-size:17px}.kd{font-weight:700;font-size:17px;color:var(--ink)}
 .dots i{aspect-ratio:1;background:color-mix(in srgb,var(--y) 28%,var(--blk));border-radius:2px}.dots i.p{background:var(--y)}.dots i.z{outline:2px solid var(--zam);outline-offset:0}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 3px}
 input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
@@ -38,8 +38,11 @@ const AY=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos',
 const ymTxt=k=>{const[y,m]=k.split('-');return AY[m-1]+' '+y};
 const now=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 const HUE=[175,215,265,330,25,95];
-const yc=ym=>'hsl('+HUE[((+ym.slice(0,4)-2025)%6+6)%6]+' 60% 52%)';
+const yc=ym=>'hsl('+(+ym.slice(0,4)%2?215:150)+' 60% 55%)';
 const dayTxt=r=>r.day+' '+ymTxt(r.ym);
+function dotRows(R){const map={};R.forEach(r=>map[r.ym]=r);const y0=+R[0].ym.slice(0,4),y1=+R[R.length-1].ym.slice(0,4);let o='';
+  for(let y=y0;y<=y1;y++){o+=`<b style="--y:${yc(y+'-01')}">${y}</b>`;for(let m=1;m<=12;m++){const r=map[y+'-'+String(m).padStart(2,'0')];
+    o+=r?`<i class="${r.due?'p':''} ${r.zam?'z':''}" style="--y:${yc(r.ym)}" title="${dayTxt(r)}"></i>`:'<i class="e"></i>'}}return o}
 const zt=z=>'%'+String(z).replace('.',',')+' zam';
 const $=s=>document.querySelector(s);
 function render(){
@@ -53,10 +56,10 @@ function render(){
     const left=R[Math.max(paidN-1,0)];const debt=paidN?left.debtLeft:cfg.price-sim.down;
     a.innerHTML=`<h1>TOKİ Takip</h1><div class="mut">${paidN} / ${cfg.n} taksit ödendi</div>
     <div class="card"><div class="mut">Sıradaki taksit · ${dayTxt(next)}</div><div class="big">${fmt(next.total)}</div>
-    <div class="mut">Banka komisyonu dahil: <b>${fmt(next.bank)}</b></div><div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
+    <div class="kd">Banka komisyonu dahil: ${fmt(next.bank)}</div><div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
     ${next.zam?`<div class="tag">${zt(next.zam)} uygulanıyor</div>`:''}</div>
-    <div class="card"><div class="dots">${R.map(r=>`<i class="${r.due?'p':''} ${r.zam?'z':''}" style="--y:${yc(r.ym)}" title="${dayTxt(r)}"></i>`).join('')}</div>
-    <div class="mut">Koyu kutu = ödenen taksit, renk = yıl. Turuncu çerçeve = zam gelen ay.</div></div>
+    <div class="card"><div class="dots">${dotRows(R)}</div>
+    <div class="mut">Her satır bir yıl. Koyu kutu = ödenen taksit. Turuncu çerçeve = zam gelen ay.</div></div>
     <div class="card grid"><div><span class="mut">Kalan borç</span><b>${fm(debt)}</b></div>
     <div><span class="mut">Kalan KDV</span><b>${fm(paidN?left.kdvLeft:0)}</b></div>
     <div><span class="mut">Güncel ev bedeli</span><b>${fm(paidN?left.price:last.price)}</b></div>
@@ -70,8 +73,8 @@ function render(){
     a.innerHTML=`<h1>Taksit listesi</h1><div class="chips">${['all',...years].map(y=>`<button class="${y===yr?'':'g'}" style="--y:${y==='all'?'var(--ok)':yc(y+'-01')}" onclick="setYr('${y}')">${y==='all'?'Tümü':y}</button>`).join('')}</div>
     ${V.map(({r,i})=>{const y=r.ym.slice(0,4),h=(yr==='all'&&y!==py)?`<div class="yh" style="--y:${yc(r.ym)}">${y}</div>`:'';py=y;
     return h+`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}" style="--y:${yc(r.ym)}">
-    <div><div class="t">${r.i}. Taksit</div><div class="mut">${dayTxt(r)}</div>${r.zam?`<div class="tag">${zt(r.zam)}</div>`:''}<div class="mut">Kalan borç <b>${fm(r.debtLeft)}</b></div></div>
-    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}<div class="mut">Komisyon dahil <b>${fmt(r.bank)}</b></div></div></div>`}).join('')}`;
+    <div><div class="t">${r.i}. Taksit</div><div class="mut">${dayTxt(r)}</div>${r.zam?`<div class="tag">${zt(r.zam)}</div>`:''}<div class="kb">Kalan borç ${fm(r.debtLeft)}</div></div>
+    <div class="r"><div class="th">${fmt(r.total)}</div>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}<div class="kd">Komisyon dahil ${fmt(r.bank)}</div></div></div>`}).join('')}`;
     const c=document.querySelector('.cur');if(c)setTimeout(()=>c.scrollIntoView({block:'center'}),50);
   }
 }
