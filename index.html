@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TOKİ Takip</title>
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#14213d;--mut:#5b6678;--line:#d9dfe7;--ok:#0f766e;--zam:#b45309;--blk:#cfd6df}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1722;--card:#18222f;--ink:#e8edf3;--mut:#93a0b3;--line:#2a3646;--ok:#2dd4bf;--zam:#fbbf24;--blk:#2a3646}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:560px;margin:auto;padding:14px 14px 90px}
+h1{font-size:22px;margin:10px 0 2px}h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.big{font-size:30px;font-weight:700;letter-spacing:-.5px}.mut{color:var(--mut);font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid b{display:block;font-size:17px}
+.dots{display:grid;grid-template-columns:repeat(30,1fr);gap:2px;margin:12px 0 6px}
+.dots i{aspect-ratio:1;background:var(--blk);border-radius:2px}.dots i.p{background:var(--ok)}.dots i.z{outline:2px solid var(--zam);outline-offset:0}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 3px}
+input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button{font:inherit;padding:10px 14px;border-radius:8px;border:0;background:var(--ok);color:#fff;font-weight:600}
+@media(prefers-color-scheme:dark){button{color:#06201c}}
+button.g{background:transparent;color:var(--mut);border:1px solid var(--line)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 0}nav button.on{color:var(--ok);box-shadow:inset 0 3px var(--ok)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.row.paid{opacity:.55}.row.cur{background:color-mix(in srgb,var(--ok) 12%,transparent);margin:0 -14px;padding:9px 14px}
+.tag{color:var(--zam);font-weight:600;font-size:13px}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
+</style></head><body><main id="app"></main>
+<nav><button data-t="ozet">Özet</button><button data-t="liste">Taksitler</button><button data-t="ayar">Ayarlar</button></nav>
+<script src="calc.js"></script>
+<script>
+const KEY='tokitakip.v1';
+const def={price:3000000,downPct:10,n:240,start:'',delivery:'',kdvPct:10,zams:[]};
+let cfg=load(),tab='ozet';
+function load(){try{const s=localStorage.getItem(KEY);if(s)return Object.assign({},def,JSON.parse(s))}catch(e){}return{...def}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
+const fmt=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2,minimumFractionDigits:2}).format(v)+' ₺';
+const fm=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0}).format(v)+' ₺';
+const AY=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const ymTxt=k=>{const[y,m]=k.split('-');return AY[m-1]+' '+y};
+const now=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const $=s=>document.querySelector(s);
+function render(){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  const a=$('#app');
+  if(!cfg.start){tab='ayar';}
+  if(tab==='ayar'||!cfg.start)return a.innerHTML=ayar();
+  const sim=Calc.simulate(cfg,now()),R=sim.rows,paidN=R.filter(r=>r.due).length;
+  const next=R[Math.min(paidN,R.length-1)],last=R[R.length-1];
+  if(tab==='ozet'){
+    const left=R[Math.max(paidN-1,0)];const debt=paidN?left.debtLeft:cfg.price-sim.down;
+    a.innerHTML=`<h1>TOKİ Takip</h1><div class="mut">${paidN} / ${cfg.n} taksit ödendi</div>
+    <div class="card"><div class="mut">Sıradaki taksit · ${ymTxt(next.ym)}</div><div class="big">${fmt(next.total)}</div>
+    <div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
+    ${next.zam?`<div class="tag">Bu ay %${next.zam} zam uygulanıyor</div>`:''}</div>
+    <div class="card"><div class="dots">${R.map(r=>`<i class="${r.due?'p':''} ${r.zam?'z':''}" title="${ymTxt(r.ym)}"></i>`).join('')}</div>
+    <div class="mut">Dolu kutu = ödenen taksit. Turuncu çerçeve = zam gelen ay.</div></div>
+    <div class="card grid"><div><span class="mut">Kalan borç</span><b>${fm(debt)}</b></div>
+    <div><span class="mut">Kalan KDV</span><b>${fm(paidN?left.kdvLeft:0)}</b></div>
+    <div><span class="mut">Güncel ev bedeli</span><b>${fm(paidN?left.price:last.price)}</b></div>
+    <div><span class="mut">Kalan taksit</span><b>${cfg.n-paidN}</b></div>
+    <div><span class="mut">Peşinat</span><b>${fm(sim.down)}</b></div>
+    <div><span class="mut">Son taksit</span><b>${ymTxt(last.ym)}</b></div></div>
+    <p class="mut">Tahminler, girilmiş zamlara göre hesaplanır. Yeni zam gelince Ayarlar'dan ekle.</p>`;
+  }else{
+    a.innerHTML=`<h1>Taksit listesi</h1><div class="card">${R.map((r,i)=>`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}">
+    <div>${r.i}. ${ymTxt(r.ym)}${r.zam?`<div class="tag">%${r.zam} zam</div>`:''}<div class="mut">Kalan borç ${fm(r.debtLeft)}</div></div>
+    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}</div></div>`).join('')}</div>`;
+    const c=document.querySelector('.cur');if(c)setTimeout(()=>c.scrollIntoView({block:'center'}),50);
+  }
+}
+function ayar(){
+  const z=[...cfg.zams].sort((a,b)=>a.ym<b.ym?-1:1);
+  return `<h1>Ayarlar</h1>${cfg.start?'':'<p class="mut">Başlamak için bilgileri doldur ve kaydet.</p>'}
+  <div class="card"><h2>Ev bilgileri</h2>
+  <label>Başlangıç ev fiyatı (₺)</label><input id="price" type="number" value="${cfg.price}">
+  <label>Peşinat (%)</label><input id="downPct" type="number" value="${cfg.downPct}">
+  <label>Toplam taksit sayısı</label><input id="n" type="number" value="${cfg.n}">
+  <label>İlk taksit ayı</label><input id="start" type="month" value="${cfg.start}">
+  <label>Teslim ayı (KDV bu aydan itibaren eklenir)</label><input id="delivery" type="month" value="${cfg.delivery}">
+  <label>KDV oranı (%)</label><input id="kdvPct" type="number" value="${cfg.kdvPct}">
+  <p><button onclick="saveCfg()">Kaydet</button></p></div>
+  <div class="card"><h2>Zamlar</h2>
+  ${z.map(x=>`<div class="row"><span>${ymTxt(x.ym)} · %${x.rate}</span><button class="g" onclick="delZam('${x.ym}')">Sil</button></div>`).join('')||'<div class="mut">Henüz zam girilmedi.</div>'}
+  <div class="sp"><div><label>Zam ayı</label><input id="zy" type="month"></div><div><label>Oran (%)</label><input id="zr" type="number" step="0.01"></div></div>
+  <p><button onclick="addZam()">Zam ekle</button></p></div>
+  <div class="card"><h2>Yedek</h2><button class="g" onclick="exp()">Verileri kopyala</button>
+  <label>Yedekten geri yükle (yapıştır)</label><input id="imp"><p><button class="g" onclick="imp()">Geri yükle</button></p></div>`;
+}
+function saveCfg(){['price','downPct','n','kdvPct'].forEach(k=>cfg[k]=+$('#'+k).value);cfg.start=$('#start').value;cfg.delivery=$('#delivery').value;
+  if(!cfg.start)return alert('İlk taksit ayını seç.');save();tab='ozet';render()}
+function addZam(){const ym=$('#zy').value,rate=+$('#zr').value;if(!ym||!rate)return alert('Ay ve oran gir.');
+  cfg.zams=cfg.zams.filter(z=>z.ym!==ym).concat({ym,rate});save();render()}
+function delZam(ym){cfg.zams=cfg.zams.filter(z=>z.ym!==ym);save();render()}
+function exp(){const t=JSON.stringify(cfg);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert('Kopyalandı. Bir yere yapıştırıp sakla.')).catch(()=>prompt('Kopyala:',t))}
+function imp(){try{cfg=Object.assign({},def,JSON.parse($('#imp').value));save();render()}catch(e){alert('Geçersiz yedek.')}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+render();
+</script></body></html>
