@@ -5,7 +5,8 @@
   function parseYM(s) { const p = s.split('-'); return [+p[0], +p[1] - 1]; }
 
   // cfg: {price, downPct, n, start:'YYYY-MM', delivery:'YYYY-MM'|'', kdvPct, zams:[{ym, rate}]}
-  function simulate(cfg, nowYM) {
+  function simulate(cfg, nowYM, nowDay) {
+    const pd = cfg.payDay == null ? 20 : +cfg.payDay;
     const price = +cfg.price, n = +cfg.n;
     const down = price * (+cfg.downPct) / 100;
     let debt = price - down, paid = down, kdv = 0, kdvStarted = false;
@@ -25,7 +26,7 @@
       const kom = tot * kp / 100, bsmv = kom * bp / 100;
       rows.push({ i: i + 1, ym: key, zam: zr, inst, kinst, total: tot, kom, bsmv, bank: tot + kom + bsmv,
         debtLeft: Math.max(debt, 0), kdvLeft: Math.max(kdv, 0), price: paid + debt + 0,
-        due: key <= nowYM });
+        day: pd, due: key < nowYM || (key === nowYM && nowDay >= pd) });
     }
     return { down, rows };
   }

@@ -12,7 +12,7 @@ h1{font-size:22px;margin:10px 0 2px}h2{font-size:17px;margin:0 0 10px}
 .big{font-size:30px;font-weight:700;letter-spacing:-.5px}.mut{color:var(--mut);font-size:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid b{display:block;font-size:17px}
 .dots{display:grid;grid-template-columns:repeat(30,1fr);gap:2px;margin:12px 0 6px}
-.dots i{aspect-ratio:1;background:var(--blk);border-radius:2px}.dots i.p{background:var(--ok)}.dots i.z{outline:2px solid var(--zam);outline-offset:0}
+.dots i{aspect-ratio:1;background:color-mix(in srgb,var(--y) 28%,var(--blk));border-radius:2px}.dots i.p{background:var(--y)}.dots i.z{outline:2px solid var(--zam);outline-offset:0}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 3px}
 input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
 button{font:inherit;padding:10px 14px;border-radius:8px;border:0;background:var(--ok);color:#fff;font-weight:600}
@@ -20,39 +20,43 @@ button{font:inherit;padding:10px 14px;border-radius:8px;border:0;background:var(
 button.g{background:transparent;color:var(--mut);border:1px solid var(--line)}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 0}nav button.on{color:var(--ok);box-shadow:inset 0 3px var(--ok)}
-.row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
-.row.paid{opacity:.55}.row.cur{background:color-mix(in srgb,var(--ok) 12%,transparent);margin:0 -14px;padding:9px 14px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.chips button{padding:8px 14px}.tag{color:var(--zam);font-weight:600;font-size:13px}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
+.row{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;margin:0 0 6px;border-left:5px solid var(--y,var(--line));border-radius:8px;background:color-mix(in srgb,var(--y,var(--line)) 9%,transparent)}.row .t{font-weight:700;font-size:17px}.row b,.mut b{color:var(--ink)}.yh{margin:14px 0 6px;padding:2px 0 2px 10px;border-left:5px solid var(--y);font-weight:700;font-size:20px;color:var(--y)}
+.row.paid{opacity:.5}.row.cur{outline:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.chips button{padding:8px 14px;background:var(--y,var(--ok))}.chips button.g{background:transparent;color:var(--ink);border:1px solid var(--y,var(--line))}.tag{display:inline-block;background:color-mix(in srgb,var(--zam) 18%,transparent);color:var(--zam);font-weight:700;font-size:13px;padding:2px 9px;border-radius:999px;margin:3px 0}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
 </style></head><body><main id="app"></main>
 <nav><button data-t="ozet">Özet</button><button data-t="liste">Taksitler</button><button data-t="ayar">Ayarlar</button></nav>
 <script src="calc.js"></script>
 <script>
 const KEY='tokitakip.v1';
-const def={price:3000000,downPct:10,n:240,start:'',delivery:'',kdvPct:10,komPct:0.5,bsmvPct:5,zams:[]};
+const def={price:3000000,downPct:10,n:240,start:'',delivery:'',kdvPct:10,komPct:0.5,payDay:20,bsmvPct:5,zams:[]};
 let cfg=load(),tab='ozet',yr=String(new Date().getFullYear());
 function load(){try{const s=localStorage.getItem(KEY);if(s)return Object.assign({},def,JSON.parse(s))}catch(e){}return{...def}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
-const fmt=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2,minimumFractionDigits:2}).format(v)+' ₺';
-const fm=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0}).format(v)+' ₺';
+const fmt=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2,minimumFractionDigits:2}).format(v)+'₺';
+const fm=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0}).format(v)+'₺';
 const AY=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const ymTxt=k=>{const[y,m]=k.split('-');return AY[m-1]+' '+y};
 const now=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const HUE=[175,215,265,330,25,95];
+const yc=ym=>'hsl('+HUE[((+ym.slice(0,4)-2025)%6+6)%6]+' 60% 52%)';
+const dayTxt=r=>r.day+' '+ymTxt(r.ym);
+const zt=z=>'%'+String(z).replace('.',',')+' zam';
 const $=s=>document.querySelector(s);
 function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
   const a=$('#app');
   if(!cfg.start){tab='ayar';}
   if(tab==='ayar'||!cfg.start)return a.innerHTML=ayar();
-  const sim=Calc.simulate(cfg,now()),R=sim.rows,paidN=R.filter(r=>r.due).length;
+  const sim=Calc.simulate(cfg,now(),new Date().getDate()),R=sim.rows,paidN=R.filter(r=>r.due).length;
   const next=R[Math.min(paidN,R.length-1)],last=R[R.length-1];
   if(tab==='ozet'){
     const left=R[Math.max(paidN-1,0)];const debt=paidN?left.debtLeft:cfg.price-sim.down;
     a.innerHTML=`<h1>TOKİ Takip</h1><div class="mut">${paidN} / ${cfg.n} taksit ödendi</div>
-    <div class="card"><div class="mut">Sıradaki taksit · ${ymTxt(next.ym)}</div><div class="big">${fmt(next.total)}</div>
+    <div class="card"><div class="mut">Sıradaki taksit · ${dayTxt(next)}</div><div class="big">${fmt(next.total)}</div>
     <div class="mut">Banka komisyonu dahil: <b>${fmt(next.bank)}</b></div><div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
-    ${next.zam?`<div class="tag">Bu ay %${next.zam} zam uygulanıyor</div>`:''}</div>
-    <div class="card"><div class="dots">${R.map(r=>`<i class="${r.due?'p':''} ${r.zam?'z':''}" title="${ymTxt(r.ym)}"></i>`).join('')}</div>
-    <div class="mut">Dolu kutu = ödenen taksit. Turuncu çerçeve = zam gelen ay.</div></div>
+    ${next.zam?`<div class="tag">${zt(next.zam)} uygulanıyor</div>`:''}</div>
+    <div class="card"><div class="dots">${R.map(r=>`<i class="${r.due?'p':''} ${r.zam?'z':''}" style="--y:${yc(r.ym)}" title="${dayTxt(r)}"></i>`).join('')}</div>
+    <div class="mut">Koyu kutu = ödenen taksit, renk = yıl. Turuncu çerçeve = zam gelen ay.</div></div>
     <div class="card grid"><div><span class="mut">Kalan borç</span><b>${fm(debt)}</b></div>
     <div><span class="mut">Kalan KDV</span><b>${fm(paidN?left.kdvLeft:0)}</b></div>
     <div><span class="mut">Güncel ev bedeli</span><b>${fm(paidN?left.price:last.price)}</b></div>
@@ -62,11 +66,12 @@ function render(){
     <p class="mut">Tahminler, girilmiş zamlara göre hesaplanır. Yeni zam gelince Ayarlar'dan ekle.</p>`;
   }else{
     const years=[...new Set(R.map(r=>r.ym.slice(0,4)))];if(yr!=='all'&&!years.includes(yr))yr=years[0];
-    const V=R.map((r,i)=>({r,i})).filter(o=>yr==='all'||o.r.ym.startsWith(yr));
-    a.innerHTML=`<h1>Taksit listesi</h1><div class="chips">${['all',...years].map(y=>`<button class="${y===yr?'':'g'}" onclick="setYr('${y}')">${y==='all'?'Tümü':y}</button>`).join('')}</div>
-    <div class="card">${V.map(({r,i})=>`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}">
-    <div>${r.i}. ${ymTxt(r.ym)}${r.zam?`<div class="tag">%${r.zam} zam</div>`:''}<div class="mut">Kalan borç ${fm(r.debtLeft)}</div></div>
-    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}<div class="mut">Komisyon dahil ${fmt(r.bank)}</div></div></div>`).join('')}</div>`;
+    const V=R.map((r,i)=>({r,i})).filter(o=>yr==='all'||o.r.ym.startsWith(yr));let py='';
+    a.innerHTML=`<h1>Taksit listesi</h1><div class="chips">${['all',...years].map(y=>`<button class="${y===yr?'':'g'}" style="--y:${y==='all'?'var(--ok)':yc(y+'-01')}" onclick="setYr('${y}')">${y==='all'?'Tümü':y}</button>`).join('')}</div>
+    ${V.map(({r,i})=>{const y=r.ym.slice(0,4),h=(yr==='all'&&y!==py)?`<div class="yh" style="--y:${yc(r.ym)}">${y}</div>`:'';py=y;
+    return h+`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}" style="--y:${yc(r.ym)}">
+    <div><div class="t">${r.i}. Taksit</div><div class="mut">${dayTxt(r)}</div>${r.zam?`<div class="tag">${zt(r.zam)}</div>`:''}<div class="mut">Kalan borç <b>${fm(r.debtLeft)}</b></div></div>
+    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}<div class="mut">Komisyon dahil <b>${fmt(r.bank)}</b></div></div></div>`}).join('')}`;
     const c=document.querySelector('.cur');if(c)setTimeout(()=>c.scrollIntoView({block:'center'}),50);
   }
 }
@@ -80,6 +85,7 @@ function ayar(){
   <label>İlk taksit ayı</label><input id="start" type="month" value="${cfg.start}">
   <label>Teslim ayı (KDV bu aydan itibaren eklenir)</label><input id="delivery" type="month" value="${cfg.delivery}">
   <label>KDV oranı (%)</label><input id="kdvPct" type="number" value="${cfg.kdvPct}">
+  <label>Taksit ödeme günü (ayın kaçı)</label><input id="payDay" type="number" value="${cfg.payDay}">
   <label>Banka komisyonu (%)</label><input id="komPct" type="number" step="0.01" value="${cfg.komPct}">
   <label>BSMV (komisyonun %'si)</label><input id="bsmvPct" type="number" step="0.01" value="${cfg.bsmvPct}">
   <p><button onclick="saveCfg()">Kaydet</button></p></div>
@@ -90,7 +96,7 @@ function ayar(){
   <div class="card"><h2>Yedek</h2><button class="g" onclick="exp()">Verileri kopyala</button>
   <label>Yedekten geri yükle (yapıştır)</label><input id="imp"><p><button class="g" onclick="imp()">Geri yükle</button></p></div>`;
 }
-function saveCfg(){['price','downPct','n','kdvPct','komPct','bsmvPct'].forEach(k=>cfg[k]=+$('#'+k).value);cfg.start=$('#start').value;cfg.delivery=$('#delivery').value;
+function saveCfg(){['price','downPct','n','kdvPct','komPct','bsmvPct','payDay'].forEach(k=>cfg[k]=+$('#'+k).value);cfg.start=$('#start').value;cfg.delivery=$('#delivery').value;
   if(!cfg.start)return alert('İlk taksit ayını seç.');save();tab='ozet';render()}
 function setYr(y){yr=y;render()}
 function addZam(){const ym=$('#zy').value,rate=+$('#zr').value;if(!ym||!rate)return alert('Ay ve oran gir.');
