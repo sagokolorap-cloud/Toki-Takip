@@ -22,14 +22,14 @@ nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);b
 nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 0}nav button.on{color:var(--ok);box-shadow:inset 0 3px var(--ok)}
 .row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
 .row.paid{opacity:.55}.row.cur{background:color-mix(in srgb,var(--ok) 12%,transparent);margin:0 -14px;padding:9px 14px}
-.tag{color:var(--zam);font-weight:600;font-size:13px}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.chips button{padding:8px 14px}.tag{color:var(--zam);font-weight:600;font-size:13px}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
 </style></head><body><main id="app"></main>
 <nav><button data-t="ozet">Özet</button><button data-t="liste">Taksitler</button><button data-t="ayar">Ayarlar</button></nav>
 <script src="calc.js"></script>
 <script>
 const KEY='tokitakip.v1';
-const def={price:3000000,downPct:10,n:240,start:'',delivery:'',kdvPct:10,zams:[]};
-let cfg=load(),tab='ozet';
+const def={price:3000000,downPct:10,n:240,start:'',delivery:'',kdvPct:10,komPct:0.5,bsmvPct:5,zams:[]};
+let cfg=load(),tab='ozet',yr=String(new Date().getFullYear());
 function load(){try{const s=localStorage.getItem(KEY);if(s)return Object.assign({},def,JSON.parse(s))}catch(e){}return{...def}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
 const fmt=v=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2,minimumFractionDigits:2}).format(v)+' ₺';
@@ -49,7 +49,7 @@ function render(){
     const left=R[Math.max(paidN-1,0)];const debt=paidN?left.debtLeft:cfg.price-sim.down;
     a.innerHTML=`<h1>TOKİ Takip</h1><div class="mut">${paidN} / ${cfg.n} taksit ödendi</div>
     <div class="card"><div class="mut">Sıradaki taksit · ${ymTxt(next.ym)}</div><div class="big">${fmt(next.total)}</div>
-    <div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
+    <div class="mut">Banka komisyonu dahil: <b>${fmt(next.bank)}</b></div><div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
     ${next.zam?`<div class="tag">Bu ay %${next.zam} zam uygulanıyor</div>`:''}</div>
     <div class="card"><div class="dots">${R.map(r=>`<i class="${r.due?'p':''} ${r.zam?'z':''}" title="${ymTxt(r.ym)}"></i>`).join('')}</div>
     <div class="mut">Dolu kutu = ödenen taksit. Turuncu çerçeve = zam gelen ay.</div></div>
@@ -61,9 +61,12 @@ function render(){
     <div><span class="mut">Son taksit</span><b>${ymTxt(last.ym)}</b></div></div>
     <p class="mut">Tahminler, girilmiş zamlara göre hesaplanır. Yeni zam gelince Ayarlar'dan ekle.</p>`;
   }else{
-    a.innerHTML=`<h1>Taksit listesi</h1><div class="card">${R.map((r,i)=>`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}">
+    const years=[...new Set(R.map(r=>r.ym.slice(0,4)))];if(yr!=='all'&&!years.includes(yr))yr=years[0];
+    const V=R.map((r,i)=>({r,i})).filter(o=>yr==='all'||o.r.ym.startsWith(yr));
+    a.innerHTML=`<h1>Taksit listesi</h1><div class="chips">${['all',...years].map(y=>`<button class="${y===yr?'':'g'}" onclick="setYr('${y}')">${y==='all'?'Tümü':y}</button>`).join('')}</div>
+    <div class="card">${V.map(({r,i})=>`<div class="row ${r.due?'paid':''} ${i===paidN?'cur':''}">
     <div>${r.i}. ${ymTxt(r.ym)}${r.zam?`<div class="tag">%${r.zam} zam</div>`:''}<div class="mut">Kalan borç ${fm(r.debtLeft)}</div></div>
-    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}</div></div>`).join('')}</div>`;
+    <div class="r"><b>${fmt(r.total)}</b>${r.kinst?`<div class="mut">KDV ${fmt(r.kinst)}</div>`:''}<div class="mut">Komisyon dahil ${fmt(r.bank)}</div></div></div>`).join('')}</div>`;
     const c=document.querySelector('.cur');if(c)setTimeout(()=>c.scrollIntoView({block:'center'}),50);
   }
 }
@@ -77,6 +80,8 @@ function ayar(){
   <label>İlk taksit ayı</label><input id="start" type="month" value="${cfg.start}">
   <label>Teslim ayı (KDV bu aydan itibaren eklenir)</label><input id="delivery" type="month" value="${cfg.delivery}">
   <label>KDV oranı (%)</label><input id="kdvPct" type="number" value="${cfg.kdvPct}">
+  <label>Banka komisyonu (%)</label><input id="komPct" type="number" step="0.01" value="${cfg.komPct}">
+  <label>BSMV (komisyonun %'si)</label><input id="bsmvPct" type="number" step="0.01" value="${cfg.bsmvPct}">
   <p><button onclick="saveCfg()">Kaydet</button></p></div>
   <div class="card"><h2>Zamlar</h2>
   ${z.map(x=>`<div class="row"><span>${ymTxt(x.ym)} · %${x.rate}</span><button class="g" onclick="delZam('${x.ym}')">Sil</button></div>`).join('')||'<div class="mut">Henüz zam girilmedi.</div>'}
@@ -85,8 +90,9 @@ function ayar(){
   <div class="card"><h2>Yedek</h2><button class="g" onclick="exp()">Verileri kopyala</button>
   <label>Yedekten geri yükle (yapıştır)</label><input id="imp"><p><button class="g" onclick="imp()">Geri yükle</button></p></div>`;
 }
-function saveCfg(){['price','downPct','n','kdvPct'].forEach(k=>cfg[k]=+$('#'+k).value);cfg.start=$('#start').value;cfg.delivery=$('#delivery').value;
+function saveCfg(){['price','downPct','n','kdvPct','komPct','bsmvPct'].forEach(k=>cfg[k]=+$('#'+k).value);cfg.start=$('#start').value;cfg.delivery=$('#delivery').value;
   if(!cfg.start)return alert('İlk taksit ayını seç.');save();tab='ozet';render()}
+function setYr(y){yr=y;render()}
 function addZam(){const ym=$('#zy').value,rate=+$('#zr').value;if(!ym||!rate)return alert('Ay ve oran gir.');
   cfg.zams=cfg.zams.filter(z=>z.ym!==ym).concat({ym,rate});save();render()}
 function delZam(ym){cfg.zams=cfg.zams.filter(z=>z.ym!==ym);save();render()}

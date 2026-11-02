@@ -21,7 +21,9 @@
       }
       const inst = debt / rem, kinst = kdvStarted ? kdv / rem : 0;
       debt -= inst; kdv -= kinst; paid += inst;
-      rows.push({ i: i + 1, ym: key, zam: zr, inst, kinst, total: inst + kinst,
+      const tot = inst + kinst, kp = cfg.komPct == null ? 0.5 : +cfg.komPct, bp = cfg.bsmvPct == null ? 5 : +cfg.bsmvPct;
+      const kom = tot * kp / 100, bsmv = kom * bp / 100;
+      rows.push({ i: i + 1, ym: key, zam: zr, inst, kinst, total: tot, kom, bsmv, bank: tot + kom + bsmv,
         debtLeft: Math.max(debt, 0), kdvLeft: Math.max(kdv, 0), price: paid + debt + 0,
         due: key <= nowYM });
     }
