@@ -23,7 +23,7 @@ nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 
 .row{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;margin:0 0 6px;border-left:5px solid var(--y,var(--line));border-radius:8px;background:color-mix(in srgb,var(--y,var(--line)) 9%,transparent)}.row .t{font-weight:700;font-size:17px}.row b,.mut b{color:var(--ink)}.yh{margin:14px 0 6px;padding:2px 0 2px 10px;border-left:5px solid var(--y);font-weight:700;font-size:20px;color:var(--y)}
 .row.paid{opacity:.5}.row.cur{outline:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.chips button{padding:8px 14px;background:var(--y,var(--ok))}.chips button.g{background:transparent;color:var(--ink);border:1px solid var(--y,var(--line))}.tag{display:inline-block;background:color-mix(in srgb,var(--zam) 18%,transparent);color:var(--zam);font-weight:700;font-size:13px;padding:2px 9px;border-radius:999px;margin:3px 0}.r{text-align:right}.sp{display:flex;gap:8px;align-items:end}.sp>div{flex:1}
-.kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0}.kv span{color:var(--mut)}.kv.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:8px}.kv.tot span{color:var(--ink);font-weight:600}.kv.tot b{font-size:18px}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0}.kv span{color:var(--mut)}.kv.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:8px}.kv.tot span{color:var(--ink);font-weight:600}.kv.tot b{font-size:22px}
 .yc{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--y);border-radius:12px;padding:12px 14px;margin:12px 0}.yc.est{opacity:.72}.yc.part{outline:2px solid var(--ok)}.yt{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.yt b{font-size:20px;color:var(--y)}.st{font-size:13px;color:var(--mut)}
 </style></head><body><main id="app"></main>
 <nav><button data-t="ozet">Özet</button><button data-t="liste">Taksitler</button><button data-t="yillik">Yıllık</button><button data-t="ayar">Ayarlar</button></nav>
@@ -48,6 +48,8 @@ function dotRows(R){const map={};R.forEach(r=>map[r.ym]=r);const y0=+R[0].ym.sli
 const sm=a=>a.reduce((o,r)=>{o.inst+=r.inst;o.kdv+=r.kinst;o.kom+=r.kom+r.bsmv;return o},{inst:0,kdv:0,kom:0});
 const kv=(l,v,c)=>`<div class="kv ${c||''}"><span>${l}</span><b>${fm(v)}</b></div>`;
 const blok=(a,down)=>{const h=a.inst+down,d=h+a.kdv;return kv('KDV hariç',h)+kv('KDV dahil',d)+kv('Komisyon dahil',d+a.kom,'tot')};
+const sp=a=>a.reduce((o,r)=>{const f=r.bank/r.total;o.t+=r.inst*f;o.k+=r.kinst*f;return o},{t:0,k:0});
+const tot3=(s,dn)=>kv('Taksit ödemeleri'+(dn?' (peşinat dahil)':''),s.t+dn)+kv('KDV ödemeleri',s.k)+kv('TOPLAM',s.t+s.k+dn,'tot');
 const zt=z=>'%'+String(z).replace('.',',')+' zam';
 const $=s=>document.querySelector(s);
 function render(){
@@ -60,6 +62,7 @@ function render(){
   if(tab==='ozet'){
     const left=R[Math.max(paidN-1,0)];const debt=paidN?left.debtLeft:cfg.price-sim.down;
     a.innerHTML=`<h1>TOKİ Takip</h1><div class="mut">${paidN} / ${cfg.n} taksit ödendi</div>
+    <div class="card"><h2>Bugüne kadar ödenen</h2><div class="mut">Banka komisyonu dahil</div>${tot3(sp(R.filter(r=>r.due)),sim.down)}</div>
     <div class="card"><div class="mut">Sıradaki taksit · ${dayTxt(next)}</div><div class="big">${fmt(next.total)}</div>
     <div class="kd">Banka komisyonu dahil: ${fmt(next.bank)}</div><div class="mut">Taksit ${fmt(next.inst)}${next.kinst?` + KDV ${fmt(next.kinst)}`:' (KDV teslimden sonra başlar)'}</div>
     ${next.zam?`<div class="tag">${zt(next.zam)} uygulanıyor</div>`:''}</div>
@@ -69,7 +72,6 @@ function render(){
     <div><span class="mut">Kalan taksit</span><b>${cfg.n-paidN}</b></div>
     <div><span class="mut">Peşinat</span><b>${fm(sim.down)}</b></div>
     <div><span class="mut">Son taksit</span><b>${ymTxt(last.ym)}</b></div></div>
-    <div class="card"><h2>Şimdiye kadar ödenen</h2><div class="mut">Peşinat dahil</div>${blok(sm(R.filter(r=>r.due)),sim.down)}</div>
     <div class="card"><h2>Ödeme takvimi</h2><div class="dots">${dotRows(R)}</div>
     <div class="mut">Her satır bir yıl. Koyu kutu = ödenen taksit. Turuncu çerçeve = zam gelen ay.</div></div>
     <p class="mut">Tahminler, girilmiş zamlara göre hesaplanır. Yeni zam gelince Ayarlar'dan ekle.</p>`;
@@ -85,15 +87,15 @@ function render(){
   }else{
     const ys=[...new Set(R.map(r=>r.ym.slice(0,4)))],P=sm(R.filter(r=>r.due)),A=sm(R);
     a.innerHTML=`<h1>Yıllık özet</h1>
-    <div class="card"><h2>Şimdiye kadar ödenen</h2><div class="mut">Peşinat dahil</div>${blok(P,sim.down)}</div>
-    <div class="card"><h2>Tahmini toplam (${cfg.n} taksit)</h2><div class="mut">Girilmiş zamlara göre</div>${blok(A,sim.down)}</div>
+    <div class="card"><h2>Bugüne kadar ödenen</h2><div class="mut">Banka komisyonu dahil</div>${tot3(sp(R.filter(r=>r.due)),sim.down)}</div>
+    <div class="card"><h2>Tahmini toplam (${cfg.n} taksit)</h2><div class="mut">Girilmiş zamlara göre, komisyon dahil</div>${tot3(sp(R),sim.down)}</div>
     ${ys.map((y,k)=>{const Y=R.filter(r=>r.ym.startsWith(y)),a2=sm(Y),pd=Y.filter(r=>r.due),p2=sm(pd),first=k===0,dn=first?sim.down:0;
       const st=pd.length===0?'Tahmin':pd.length===Y.length?'Ödendi':`Kısmen ödendi · ${pd.length}/${Y.length}`;
       const cls=pd.length===0?'est':pd.length===Y.length?'':'part';
       const zl=Y.filter(r=>r.zam).map(r=>AY[+r.ym.slice(5)-1]+' %'+String(r.zam).replace('.',',')).join(' · ');
       return `<div class="yc ${cls}" style="--y:${yc(y+'-01')}"><div class="yt"><b>${y}</b><span class="st">${st}</span></div>
-      ${zl?`<div class="mut">Zam: ${zl}</div>`:''}${first?kv('Peşinat',dn):''}${blok(a2,dn)}
-      ${cls==='part'?kv('Şimdiye kadar ödenen',p2.inst+p2.kdv+p2.kom+dn):''}</div>`}).join('')}`;
+      ${zl?`<div class="mut">Zam: ${zl}</div>`:''}${tot3(sp(Y),dn)}
+      ${cls==='part'?kv('Şimdiye kadar ödenen',sp(pd).t+sp(pd).k+dn):''}</div>`}).join('')}`;
   }
 }
 function ayar(){
