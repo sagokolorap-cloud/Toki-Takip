@@ -11,8 +11,8 @@ h1{font-size:22px;margin:10px 0 2px}h2{font-size:17px;margin:0 0 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
 .big{font-size:30px;font-weight:300;letter-spacing:-.5px}.mut{color:var(--mut);font-size:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid b{display:block;font-size:17px}
-.dots{display:grid;grid-template-columns:32px repeat(12,13px);gap:3px;margin:10px 0 8px}.dots b{font-size:10px;color:var(--y);align-self:center}.dots i.e{background:transparent}.kb{font-weight:700;font-size:16px;color:var(--ink)}.th{font-weight:300;font-size:17px}.kd{font-weight:700;font-size:17px;color:var(--ink)}
-.dots i{width:13px;height:13px;background:color-mix(in srgb,var(--y) 28%,var(--blk));border-radius:3px}.dots i.p{background:var(--y)}.dots i.z{outline:1.5px solid var(--zam);outline-offset:0}
+.dots{display:grid;grid-template-columns:32px repeat(12,1fr);gap:3px;margin:10px 0 8px}.dots b{font-size:10px;color:var(--y);align-self:center}.dots i.e{background:transparent}.kb{font-weight:700;font-size:16px;color:var(--ink)}.th{font-weight:300;font-size:17px}.kd{font-weight:700;font-size:17px;color:var(--ink)}
+.dots em{font-style:normal;font-size:10px;color:var(--mut);text-align:center}.dots i{height:13px;background:color-mix(in srgb,var(--y) 28%,var(--blk));border-radius:3px}.dots i.p{background:var(--y)}.dots i.z{outline:1.5px solid var(--zam);outline-offset:0}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 3px}
 input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
 button{font:inherit;padding:10px 14px;border-radius:8px;border:0;background:var(--ok);color:#fff;font-weight:600}
@@ -43,7 +43,7 @@ const now=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()
 const HUE=[175,215,265,330,25,95];
 const yc=ym=>'hsl('+(+ym.slice(0,4)%2?215:150)+' 60% 55%)';
 const dayTxt=r=>r.day+' '+ymTxt(r.ym);
-function dotRows(R){const map={};R.forEach(r=>map[r.ym]=r);const y0=+R[0].ym.slice(0,4),y1=+R[R.length-1].ym.slice(0,4);let o='';
+function dotRows(R){const map={};R.forEach(r=>map[r.ym]=r);const y0=+R[0].ym.slice(0,4),y1=+R[R.length-1].ym.slice(0,4);let o='<span></span>'+'OŞMNMHTAEEKA'.split('').map(c=>`<em>${c}</em>`).join('');
   for(let y=y0;y<=y1;y++){o+=`<b style="--y:${yc(y+'-01')}">${y}</b>`;for(let m=1;m<=12;m++){const r=map[y+'-'+String(m).padStart(2,'0')];
     o+=r?`<i class="${r.due?'p':''} ${r.zam?'z':''}" style="--y:${yc(r.ym)}" title="${dayTxt(r)}"></i>`:'<i class="e"></i>'}}return o}
 const sm=a=>a.reduce((o,r)=>{o.inst+=r.inst;o.kdv+=r.kinst;o.kom+=r.kom+r.bsmv;return o},{inst:0,kdv:0,kom:0});
